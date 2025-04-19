@@ -1,8 +1,10 @@
 import numpy as np
 import scipy.sparse as sp
 import torch
+import os
+import pandas as pd
 
-
+'''
 def encode_onehot(labels):
     classes = set(labels)
     classes_dict = {c: np.identity(len(classes))[i, :] for i, c in
@@ -10,19 +12,20 @@ def encode_onehot(labels):
     labels_onehot = np.array(list(map(classes_dict.get, labels)),
                              dtype=np.int32)
     return labels_onehot
+'''
 
-
-def load_data(path="../data/cora/", dataset="cora"):
+def load_data(path="../data/water/", dataset="water"):
     """Load citation network dataset (cora only for now)"""
     print('Loading {} dataset...'.format(dataset))
 
     idx_features_labels = np.genfromtxt("{}{}.content".format(path, dataset),
                                         dtype=np.dtype(str))
     features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
-    labels = encode_onehot(idx_features_labels[:, -1])
+    labels = idx_features_labels[:,-1].astype(np.float32)
 
     # build graph
     idx = np.array(idx_features_labels[:, 0], dtype=np.int32)
+    print(idx)
     idx_map = {j: i for i, j in enumerate(idx)}
     edges_unordered = np.genfromtxt("{}{}.cites".format(path, dataset),
                                     dtype=np.int32)
@@ -43,7 +46,7 @@ def load_data(path="../data/cora/", dataset="cora"):
     idx_test = range(500, 1500)
 
     features = torch.FloatTensor(np.array(features.todense()))
-    labels = torch.LongTensor(np.where(labels)[1])
+    labels = torch.FloatTensor(labels)
     adj = sparse_mx_to_torch_sparse_tensor(adj)
 
     idx_train = torch.LongTensor(idx_train)
@@ -52,7 +55,27 @@ def load_data(path="../data/cora/", dataset="cora"):
 
     return adj, features, labels, idx_train, idx_val, idx_test
 
+'''
+def load_adj(dataset_name):
+    dataset_path = './data'
+    dataset_path = os.path.join(dataset_path, dataset_name)
+    point_mat = sp.load_npz(os.path.join(dataset_path, 'point_mat.npz'))
+    point_mat = point_mat.tocsc()
+    n_vertex = 30
+    print(point_mat)
 
+    return point_mat, n_vertex
+
+def load_data(dataset_name, len_train, len_val):
+    dataset_path = './data'
+    dataset_path = os.path.join(dataset_path, dataset_name)
+    v_data = pd.read_csv(os.path.join(dataset_path, 'v_data.csv'),header=None)
+    
+    train = v_data[: len_train]
+    val = v_data[len_train: len_train + len_val]
+    test = v_data[len_train + len_val:]
+    return train, val, test
+'''
 def normalize(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))
@@ -62,13 +85,13 @@ def normalize(mx):
     mx = r_mat_inv.dot(mx)
     return mx
 
-
+'''
 def accuracy(output, labels):
     preds = output.max(1)[1].type_as(labels)
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct / len(labels)
-
+'''
 
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
